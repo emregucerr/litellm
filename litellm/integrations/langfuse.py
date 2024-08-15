@@ -138,12 +138,7 @@ class LangFuseLogger:
         level="DEFAULT",
         status_message=None,
     ) -> dict:
-        if kwargs.get("litellm_params", {}).get("metadata", {}).get("disable_langfuse") == True:
-            print_verbose("Langfuse logging is disabled via metadata.")
-            return {"trace_id": None, "generation_id": None}
-        # Method definition
-        
-        # Add this at the beginning of the log_event method
+      
         if kwargs.get("litellm_params", {}).get("metadata", {}).get("disable_langfuse") == True:
             print_verbose("Langfuse logging is disabled via metadata.")
             return {"trace_id": None, "generation_id": None}

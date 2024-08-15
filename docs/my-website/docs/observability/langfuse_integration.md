@@ -56,6 +56,40 @@ response = litellm.completion(
 ```
 
 ## Advanced
+
+### Disable Langfuse Logging
+
+You can disable Langfuse logging for a specific call by setting the `disable_langfuse` key in the metadata to `True`.
+
+Example:
+```python
+import litellm
+from litellm import completion
+import os
+
+# from https://cloud.langfuse.com/
+os.environ["LANGFUSE_PUBLIC_KEY"] = ""
+os.environ["LANGFUSE_SECRET_KEY"] = ""
+
+# OpenAI and Cohere keys 
+os.environ['OPENAI_API_KEY']=""
+
+# set langfuse as a callback, litellm will send the data to langfuse
+litellm.success_callback = ["langfuse"] 
+
+# openai call with metadata to disable langfuse logging
+response = completion(
+  model="gpt-3.5-turbo",
+  messages=[
+    {"role": "user", "content": "Hi 👋 - i'm openai"}
+  ],
+  metadata = {
+    "disable_langfuse": True
+  }
+)
+
+print(response)
+```
 ### Set Custom Generation names, pass metadata
 
 Pass `generation_name` in `metadata`

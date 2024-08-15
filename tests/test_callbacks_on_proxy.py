@@ -12,6 +12,7 @@ import os
 import dotenv
 from dotenv import load_dotenv
 import pytest
+from litellm.integrations.langfuse import LangFuseLogger
 
 load_dotenv()
 
@@ -39,7 +40,7 @@ async def config_update(session, routing_strategy=None):
         print(response_text)
         print()
 
-        if status != 200:
+        if (status != 200):
             raise Exception(f"Request did not return a 200 status code: {status}")
         return await response.json()
 
@@ -58,7 +59,7 @@ async def get_active_callbacks(session):
         print(response_text)
         print()
 
-        if status != 200:
+        if (status != 200):
             raise Exception(f"Request did not return a 200 status code: {status}")
 
         _json_response = await response.json()
@@ -85,7 +86,7 @@ async def get_current_routing_strategy(session):
         print(response_text)
         print()
 
-        if status != 200:
+        if (status != 200):
             raise Exception(f"Request did not return a 200 status code: {status}")
 
         _json_response = await response.json()
@@ -201,3 +202,42 @@ async def test_check_num_callbacks_on_lowest_latency():
         assert num_alerts_1 == num_alerts_2 == num_alerts_3
 
         await config_update(session=session, routing_strategy=original_routing_strategy)
+
+
+def test_disable_langfuse_logging(mocker):
+    # Mock the verbose_logger methods and the print function
+    mocker.patch('litellm._logging.verbose_logger.info')
+    mocker.patch('litellm._logging.verbose_logger.warning')
+    mocker.patch('litellm._logging.verbose_logger.debug')
+    mock_print_verbose = mocker.Mock()
+
+    # Initialize LangFuseLogger
+    logger = LangFuseLogger()
+
+    # Test data
+    kwargs = {
+        "litellm_params": {
+            "metadata": {
+                "disable_langfuse": True
+            }
+        }
+    }
+    response_obj = {}
+    start_time = end_time = user_id = None
+
+    # Call the log_event function
+    logger.log_event(
+        kwargs,
+        response_obj,
+        start_time,
+        end_time,
+        user_id,
+        mock_print_verbose
+    )
+
+    # Check if the print_verbose method was called with the expected message
+    mock_print_verbose.assert_called_with("Langfuse logging is disabled via metadata.")
+
+
+if __name__ == "__main__":
+    pytest.main()

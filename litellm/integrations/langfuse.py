@@ -138,7 +138,15 @@ class LangFuseLogger:
         level="DEFAULT",
         status_message=None,
     ) -> dict:
+        if kwargs.get("litellm_params", {}).get("metadata", {}).get("disable_langfuse") == True:
+            print_verbose("Langfuse logging is disabled via metadata.")
+            return {"trace_id": None, "generation_id": None}
         # Method definition
+        
+        # Add this at the beginning of the log_event method
+        if kwargs.get("litellm_params", {}).get("metadata", {}).get("disable_langfuse") == True:
+            print_verbose("Langfuse logging is disabled via metadata.")
+            return {"trace_id": None, "generation_id": None}
 
         try:
             print_verbose(
@@ -256,7 +264,12 @@ class LangFuseLogger:
         self, kwargs, response_obj, start_time, end_time, user_id, print_verbose
     ):
         """
-        TODO: support async calls when langfuse is truly async
+        # Check if logging is disabled via metadata
+        if kwargs.get("litellm_params", {}).get("metadata", {}).get("disable_langfuse") == True:
+            print_verbose("Langfuse logging is disabled via metadata.")
+            return {"trace_id": None, "generation_id": None}
+
+        # existing TODO comment
         """
 
     def _is_langfuse_v2(self):

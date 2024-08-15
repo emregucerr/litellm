@@ -8,6 +8,7 @@ import os
 import dotenv
 from dotenv import load_dotenv
 import pytest
+from litellm.integrations.langfuse import LangFuseLogger
 
 load_dotenv()
 
@@ -171,3 +172,75 @@ async def test_team_2logging():
 
     except Exception as e:
         pytest.fail("Team 2 logging failed: " + str(e))
+
+
+@pytest.mark.asyncio
+async def test_no_logging_when_disabled():
+    """
+    -> Create a key for team 1
+    -> Make completion call with enabled=False
+    -> Ensure no logs are created in langfuse
+    """
+    try:
+        async with aiohttp.ClientSession() as session:
+
+            key = await generate_key(
+                session, models=["fake-openai-endpoint"], team_id="team-1"
+            )  # team-1 logs to project 1
+
+            import uuid
+
+            _trace_id = f"trace-{uuid.uuid4()}"
+            _request_metadata = {
+                "trace_id": _trace_id,
+            }
+
+            # Make the completion call with enabled=False
+            await chat_completion(
+                session,
+                key["key"],
+                model="fake-openai-endpoint",
+                request_metadata=_request_metadata,
+            )
+
+            import langfuse
+
+            langfuse_client = langfuse.Langfuse(
+                public_key=os.getenv("LANGFUSE_PROJECT1_PUBLIC"),
+                secret_key=os.getenv("LANGFUSE_PROJECT1_SECRET"),
+            )
+
+            await asyncio.sleep(10)
+
+            print(f"searching for trace_id={_trace_id} on langfuse")
+
+            generations = langfuse_client.get_generations(trace_id=_trace_id).data
+            print(generations)
+
+            # Ensure no generations were logged
+            assert len(generations) == 0
+
+    except Exception as e:
+        pytest.fail(f"Unexpected error: {str(e)}")
+
+
+def print_verbose(message):
+    print(message)
+
+def test_disable_langfuse_logging():
+    logger = LangFuseLogger()
+
+    kwargs = {
+        "litellm_params": {
+            "metadata": {
+                "disable_langfuse": True
+            }
+        }
+    }
+    response_obj = None
+    start_time = None
+    end_time = None
+    user_id = None
+
+    result = logger.log_event(kwargs, response_obj, start_time, end_time, user_id, print_verbose)
+    assert result == {"trace_id": None, "generation_id": None}, "Logging should be disabled"
